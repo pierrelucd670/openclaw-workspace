@@ -1,0 +1,37 @@
+# Sensible — jamais commit
+openclaw.json
+*.token
+*.key
+*.pem
+.env
+
+# Fichiers lourds / générés
+output/
+*.mp3
+*.flac
+*.ogg
+*.wav
+*.safetensors
+*.ckpt
+*.pt
+*.bin
+*.onnx
+
+# RAG docs (HTML/web scrapé)
+rag_docs/
+
+# Cache Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs / sessions
+*.log
+memory/
+daily/
+*.jsonl
+
+# ComfyUI (pas dans le workspace normalement)
+ComfyUI/
+main/
