@@ -1,6 +1,6 @@
 # SESSION-STATE.md
 
-Last Updated: 2026-05-20 06:05 EDT
+Last Updated: 2026-05-20 06:07 EDT
 Agent: SpicyClaw (main)
 Workspace: /home/peyo/.openclaw/workspace
 
@@ -8,7 +8,7 @@ Workspace: /home/peyo/.openclaw/workspace
 - Download and setup LTX-2 video generation sur le Win11 de Pl, test génération
 
 ## Active Tasks
-- [ ] Attendre la fin du download curl du modèle `ltx-2.3-22b-distilled-1.1.safetensors` (43 GB, ~25 min remaining)
+- [ ] Attendre la fin du download curl du modèle `ltx-2.3-22b-distilled-1.1.safetensors` (43 GB, 16.0/43 GB, curl roule)
 - [ ] Downloader `ltx-2.3-22b-distilled-lora-384-1.1.safetensors` (7 GB) après le premier
 - [ ] Downloader `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` (1 GB)
 - [ ] Downloader Gemma 3 12B text encoder (gated, besoin token HF)
@@ -21,7 +21,7 @@ Workspace: /home/peyo/.openclaw/workspace
 - Quand Pl dit "laisse faire", LAISSE FAIRE. Pas toucher.
 
 ## Blockers
-- Download 43 GB en cours (~25 min restant)
+- Download 43 GB en cours (16/43 GB, ~15 min restant)
 - Gemma 3 gated sur HuggingFace — besoin d'un token HF avec accès accepté
 - RTX 3060 12GB VRAM — peut-être pas assez pour le full pipeline, faudra utiliser fp8
 
