@@ -18,6 +18,8 @@ CHUNK_OVERLAP = 300
 COLLECTIONS = {
     "openclaw_docs": "/home/peyo/.npm-global/lib/node_modules/openclaw/docs",
     "comfyui_docs": "/home/peyo/.openclaw/workspace/rag_docs/comfyui",
+    "ollama_docs": "/home/peyo/.openclaw/workspace/rag_docs/ollama",
+    "ltx2_docs": "/home/peyo/.openclaw/workspace/rag_docs/ltx2",
 }
 
 # Only index these openclaw subdirs

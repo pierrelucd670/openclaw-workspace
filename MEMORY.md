@@ -155,7 +155,59 @@ JuggernautXL_ragnarokBy → KSampler(40steps, CFG 6.5, dpmpp_2m, karras) → ReA
 
 ---
 
-_À enrichir au fil des sessions._
+_
+
+---
+
+## May 19 2026 — Architecture State (post-dreaming consolidation)
+
+### 🧠 Memory Stack (3 layers)
+- **Mem0 v2.0.2** — Qdrant souvenirs narratifs, 9 mémoires Pl seedées, extraction LLM locale
+- **memory-lancedb** — LanceDB vector recall, embeddings nomic-embed-text 768d, autoRecall:true
+- **memory-wiki** — vault connaissance compilée, mode bridge lié à lancedb
+
+### 📚 RAG Qdrant (3 collections)
+| Collection | Points | Source |
+|-----------|--------|--------|
+| `openclaw_docs` | 2424 | Docs OpenClaw officielles |
+| `comfyui_docs` | 738 | docs.comfy.org + GitHub |
+| `ollama_docs` | 5 | Ollama troubleshooting/qwen3-vl |
+
+### 🧬 FORGE — Auto-évolution (MVP)
+- **Concept**: Échec → artefact de connaissance → injection automatique → boucle fermée
+- **Collection Qdrant**: `forge_knowledge` (768d, nomic-embed-text) + `creative_hub`
+- **6 artefacts** seedés (coding×3, comfyui×2, llm×1)
+- **Testé live**: preflight + sub-agent + échec forcé → postmortem capture → prochain preflight trouve la leçon ✅
+
+### 🎨 Creative Hub — GPU allocation (May 19)
+| GPU | Tâche | Notes |
+|-----|-------|-------|
+| T4 0 (16GB) | ComfyUI Image + Upscale | Dédié, pas de P2P requis |
+| T4 1 (16GB) | Ollama + Audio (Qwen3-TTS) | systemd override CUDA_VISIBLE_DEVICES=1,2 |
+| T4 2 (16GB) | 3D (Hunyuan3D 2.0) | Même override que T4 1 |
+| RTX 3060 12GB (Win11) | Vidéo LTX-2 (4K, 20s) | SSH direct + HTTP serveur |
+
+### 🔧 Vision Pipeline (19 mai)
+- **Modèle**: `qwen3-vl:8b` (6.1 GB) — remplace LLaVA/MiniCPM-V cassés par Ollama 0.24.0
+- **Effacé**: 20.3 GB de vieux modèles vision
+- **OpenClaw imageModel**: `ollama/qwen3-vl:8b`
+- **Script**: `scripts/describe_image.py`
+
+### 🖥️ Windows Co-processeur
+- **Computer Use**: Serveur HTTP Python (pyautogui) + SSH direct (peyo6@192.168.2.13)
+- **LTX-2 Video**: G:\ai (SSH PowerShell)
+- **Skill**: `workspace/skills/computer-use/`
+- ⚠️ Leçon: `tools.exec.host=node` NE PAS mettre en global
+
+### 🔗 Patterns REM consolidés
+| Pattern | Confidence | Application |
+|---------|-----------|-------------|
+| Auto-évolution (FORGE) | 0.90 | Intégrer preflight/postmortem dans tous les sub-agents |
+| Pl architecte système | 0.90 | Conception multi-machine, pas seulement usage |
+| Windows co-processeur | 0.85 | SSH+HTTP, pas node host pairing |
+| Dual memory (Mem0+LanceDB+RAG) | 0.82 | Utiliser search_rag.py avant chaque réponse technique |
+| Interruption style Pl | 0.80 | Toujours montrer plan avant exécution |
+| Français QC = langue officielle | 0.95 | Zero anglais dans les messages Pl |
 
 ## Cron — Météo + News matinal (19 mai 2026)
 - **Job ID** : `a25348c4-05aa-4100-ab32-c879d6740b02`
@@ -490,3 +542,161 @@ qui crée/supprime un fichier pour forcer un événement inotify → Samba → W
 - peyo670-pc, ID `f08435f0...`, v2026.5.12
 - Service Scheduled Task désinstallé, device pairing retiré
 - Remplacé par l'approche HTTP ci-dessus
+
+---
+
+## Session 19 mai 2026 (PM) — Ollama Vision Fix + GPU Optimization
+
+### 🔍 Problème: LLaVA/vision ne marchait plus
+- **Cause**: Ollama 0.24.0 a changé d'engine multimodal (GGML-based au lieu de llama.cpp)
+- LLaVA, MiniCPM-V ne sont **plus supportés** par le nouvel engine
+- Blog officiel: https://ollama.com/blog/multimodal-models
+
+### ✅ Solution: Qwen3-VL:8b
+- **Modèle vision**: `qwen3-vl:8b` (6.1 GB) — meilleur modèle vision local, moins censuré que Gemma3
+- **Tailles dispo**: 2B, 4B, 8B, 30B, 32B, 235B
+- **T4 16GB**: 8B recommandé, 32B possible sur 2× T4
+- **Features**: 256K contexte, OCR 32 langues, spatial reasoning, visual coding, GUI agent
+- **Effacés**: llava:7b, llava:13b, gemma3:12b, minicpm-v (20.3 GB libérés)
+
+### ⚙️ GPU Optimization
+- **Topologie PCIe**: GPU 0 (NUMA 0, isolé), GPU 1+2 (NUMA 1, PHB rapide entre eux)
+- **GPU 0** → ComfyUI (dédié, pas de P2P requis)
+- **GPU 1+2** → Ollama (CUDA_VISIBLE_DEVICES=1,2 via systemd override)
+- **Override**: `/etc/systemd/system/ollama.service.d/gpu-override.conf`
+  ```
+  [Service]
+  Environment="CUDA_VISIBLE_DEVICES=1,2"
+  ```
+- **Réversible**: supprimer le dossier `/etc/systemd/system/ollama.service.d/` et `systemctl daemon-reload`
+
+### 🧠 Vision Pipeline
+- **OpenClaw imageModel**: `ollama/qwen3-vl:8b` (`agents.defaults.imageModel`)
+- **Script local**: `scripts/describe_image.py` → qwen3-vl:8b par défaut, accepte `--model=X`
+- **Utilisation**: `python3 scripts/describe_image.py mon_image.png --model=qwen3-vl:8b "prompt"`
+
+### 📚 RAG — ollama_docs
+- **Collection Qdrant**: `ollama_docs` (5 chunks)
+- **Docs indexées**:
+  - `multimodal-engine.md` — nouvel engine, modèles supportés, erreur exit status 2
+  - `troubleshooting.md` — logs, LLM libraries, GPU discovery, downgrade
+  - `qwen3-vl.md` — specs, tailles, features, comparaison Gemma3
+- **Recherche**: `./scripts/search_rag.py "query" --col ollama_docs`
+
+### 🧪 Spike vLLM (verdict)
+- **vLLM 0.21.0**: installé dans `.tmp/openclaw-spikes/vllm-vision/venv`
+- **Texte ✅**: opt-125m fonctionne parfaitement
+- **Vision ❌**: llava-1.5-7b-hf OOM sur T4 (15.56GB insuffisant à 0.85 utilization)
+- **Verdict**: vLLM pas adapté pour le vision sur T4. Garder Ollama.
+
+### 🎨 ComfyUI ReActor — Diagnostic
+- **Problème**: ReActor swappe `dufour_face` sur le mauvais visage (le noir au lieu du blanc/Pl)
+- **Confirmé par Qwen3-VL**: visage gauche (noir) montre traits AI-manipulés
+- **À fixer**: prompt ou workflow pour que le visage de Pl soit le seul bien visible
+
+---
+
+## Session 19 mai 2026 (PM) — FORGE Engine MVP + Intégration Live
+
+### 🧠 FORGE — Système auto-évolutif par échecs
+- **Concept**: Chaque échec → artefact de connaissance → injection automatique → boucle fermée
+- **Collection Qdrant**: `forge_knowledge` (768d, nomic-embed-text) + `creative_hub` (prête)
+- **6 artefacts** en base: coding×3, comfyui×2, llm×1
+
+### 📂 Fichiers
+- `hyperaware/forge/` — Modules core (failure_detector, artifact_generator, knowledge_store, evolution_tracker)
+- `hyperaware/forge_cli.py` — CLI 7 commandes (learn, recall, inject, validate, stats, evolution, signals)
+- `hyperaware/forge_preflight.py` — Injection automatique AVANT routage
+- `hyperaware/forge_postmortem.py` — Apprentissage automatique APRÈS échec
+- `hyperaware/forge_inject.sh` — Helper bash pour usage inline
+- `hyperaware/forge_capture.sh` — Helper bash pour capture d'échec
+
+### 🔄 Boucle FORGE (testée live)
+```
+PREFLIGHT → Query Qdrant → Injecte leçons dans prompt → SPAWN sub-agent
+  ├── SUCCÈS → Validate --helped (success_rate monte)
+  └── ÉCHEC  → POSTMORTEM → Detect → LLM génère artefact → Store Qdrant
+                                                                   ↓
+                                              PROCHAIN PREFLIGHT ← ┘ (leçons injectées)
+```
+
+### 🧪 Tests live passés
+- **forge_test_comfyui**: Preflight + sub-agent → ComfyUI UP ✅
+- **forge_test_failure**: Preflight + échec forcé → Postmortem appris "vérifie path avant execution" ✅
+- **Boucle fermée vérifiée**: Preflight suivant retrouve la nouvelle leçon ✅
+
+### 🔑 Win11 SSH — Clé configurée
+- **Host**: 192.168.2.13:22
+- **User**: peyo6 (peyo670-pc\peyo6)
+- **Clé**: `/home/peyo/.ssh/id_ed25519` — déjà autorisée ✅
+- **Usage**: `ssh -o StrictHostKeyChecking=no peyo6@192.168.2.13 "powershell -Command \"...\""`
+- **Path Windows**: `G:\ai` pour projets AI, `C:\Users\peyo6\.openclaw\computer-use\` pour serveur computer-use
+- ⚠️ Plus jamais utiliser pyautogui `/type` — layout AZERTY scrappe les caractères. SSH direct.
+
+## Win11 — Règles d'or pour les downloads
+
+- **Toujours utiliser curl.exe** pour les downloads de fichiers sur Win11. Pas Python, pas huggingface_hub, pas huggingface-cli, pas BITS.
+- curl.exe = 1 seul process, resume support `--continue-at -`, built-in Windows
+- Commande standard : `curl.exe -L --continue-at - -o DEST\file URL`
+- Lancer via scheduled task pour survivre à la déconnexion SSH
+- **Jamais** killer/restart un download qui progresse — laisser finir
+- Session 19 mai 2026: download du modèle LTX-2.3 43 GB, ~30 min ETA avec curl
+
+### 🖥️ Hub Créatif — GPU allocation planifiée
+- **T4 0** (16GB) → ComfyUI Image + Upscale
+- **T4 1** (16GB) → Ollama + Audio (Qwen3-TTS)
+- **T4 2** (16GB) → 3D (Hunyuan3D 2.0)
+- **RTX 3060** (12GB, Win11) → Vidéo LTX-2 (4K, 20s)
+
+---
+
+## Session 20 mai 2026 — LTX-2 Setup + RAG ltx2_docs
+
+### ⚡ LTX-2 sur Win11 (RTX 3060 12GB)
+
+**Repo**: Lightricks/LTX-2, cloné dans `G:\ai\ltx2\LTX-2`
+**Venv**: `.venv` via `uv sync --frozen` (Python 3.13, torch 2.6.0+cu124)
+**GPU**: RTX 3060 12GB, CUDA 12.4
+
+**Packages installés**:
+- `ltx-core==1.1.3`, `ltx-pipelines==1.1.3`, `ltx-trainer==1.1.3` (from monorepo)
+- `huggingface_hub==0.36.0`, `diffusers`, `transformers`, `accelerate`
+- `torch==2.6.0+cu124`, `torchvision==0.21.0+cu124`
+
+**Fix appliqué**: `multigpu` module manquant → stub créé dans `packages/ltx-pipelines/src/ltx_pipelines/multigpu/`
+
+**Pipelines disponibles**: DistilledPipeline, TI2VidTwoStagesPipeline, ICLoraPipeline, A2VidPipelineTwoStage, LipDubPipeline, etc.
+
+### 📦 Modèles à downloader
+| Fichier | Taille | Status |
+|--------|-------|--------|
+| `ltx-2.3-22b-distilled-1.1.safetensors` | 43 GB | En cours (curl) |
+| `ltx-2.3-22b-distilled-lora-384-1.1.safetensors` | 7 GB | Pas encore |
+| `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` | 1 GB | Pas encore |
+| Gemma 3 12B IT QAT Q4_0 (text encoder) | ~7 GB | Gated sur HF, besoin token |
+
+**⚠️ Leçons apprises (dure)**:
+- Jamais utiliser BITS/Start-BitsTransfer pour download → trop lent
+- Jamais utiliser huggingface_hub/huggingface-cli → spawn 2+ process Python
+- **Toujours curl.exe** avec `--continue-at -` pour resume
+- Toujours lancer via une Scheduled Task (survit à SSH disconnect)
+- Jamais killer/restart un download qui progresse
+- Quand Pl dit "laisse faire", LAISSE FAIRE. Pas toucher.
+
+### 🤖 Computer-Use Server
+- **Server**: `C:\Users\peyo6\.openclaw\computer-use\server.py`
+- **Port**: 9876 sur Win11
+- **NSSM**: installé via winget mais PAS utilisé comme service (services peuvent pas interagir avec le desktop)
+- **Scheduled Task à login**: `ComputerUseSvc` → roule server.py au login de peyo6
+- **Endpoints**: `/health`, `/screenshot`, `/click`, `/type`, `/press`, `/scroll`, `/move`, `/screen_size`, `/mouse_pos`
+
+### 📚 RAG — ltx2_docs
+- **Collection Qdrant**: `ltx2_docs` (10 chunks, 768d, nomic-embed-text)
+- **Script**: `scripts/index_ltx2_rag.py` (utilise mem0-venv)
+- **Sources indexées** (dans `rag_docs/ltx2/`):
+  - `github-readme.md` — pipelines, CLI, prompting guide, VRAM tips, ComfyUI integration
+  - `hf-model-card.md` — model checkpoints, specs, limitations, citation
+  - `comfyui-integration.md` — ComfyUI install, workflows, troubleshooting
+  - `vram-requirements.md` — VRAM par résolution, optimisation 12GB
+- **Collection ajoutée** à `index_all_rag.py` dans COLLECTIONS
+- **Recherche**: `./scripts/search_rag.py "query" --col ltx2_docs`
